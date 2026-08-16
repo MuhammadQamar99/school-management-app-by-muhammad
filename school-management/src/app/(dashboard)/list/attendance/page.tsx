@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import { useApp } from "@/context/AppContext";
-import { CheckCircle2, XCircle, Clock, Calendar, Users, Filter, Check, Save } from "lucide-react";
+import { CheckCircle2, XCircle, Clock, Calendar, Users, Filter, Check } from "lucide-react";
 import Image from "next/image";
 
 export default function AttendancePage() {
@@ -10,10 +10,21 @@ export default function AttendancePage() {
   const [selectedClass, setSelectedClass] = useState<string>("All");
   const [selectedDate, setSelectedDate] = useState<string>("2026-08-16");
 
+  // 🔒 DATA ISOLATION:
+  const roleStudents = students.filter((s) => {
+    if (role === "student" || role === "parent") {
+      return s.name.toLowerCase() === "lucas bennett";
+    }
+    if (role === "teacher") {
+      return s.class === "10A" || s.class === "11A";
+    }
+    return true;
+  });
+
   const filteredStudents =
     selectedClass === "All"
-      ? students
-      : students.filter((s) => s.class === selectedClass);
+      ? roleStudents
+      : roleStudents.filter((s) => s.class === selectedClass);
 
   const getStudentStatus = (studentId: number) => {
     const record = attendanceRecords.find(
@@ -47,10 +58,16 @@ export default function AttendancePage() {
         <div>
           <h1 className="text-base font-bold text-gray-800 flex items-center gap-2">
             <CheckCircle2 className="w-5 h-5 text-purple-600" />
-            Class Attendance Register & Roll Call
+            {role === "student"
+              ? "My Daily Attendance History"
+              : role === "parent"
+              ? "Child's Attendance Report"
+              : "Class Attendance Register"}
           </h1>
           <p className="text-xs text-gray-400">
-            Real-time presence tracking, leave management, and daily roll calls
+            {role === "student" || role === "parent"
+              ? "Official presence logs and punctuality percentage for Lucas Bennett"
+              : "Real-time presence tracking, leave management, and daily roll calls"}
           </p>
         </div>
 
@@ -66,32 +83,32 @@ export default function AttendancePage() {
             />
           </div>
 
-          <div className="flex items-center gap-1.5 text-xs bg-gray-50 px-3 py-1.5 rounded-xl border border-gray-200">
-            <Filter className="w-3.5 h-3.5 text-gray-400" />
-            <select
-              value={selectedClass}
-              onChange={(e) => setSelectedClass(e.target.value)}
-              className="bg-transparent outline-none text-xs font-semibold text-gray-700"
-            >
-              <option value="All">All Classes</option>
-              <option value="10A">Class 10A</option>
-              <option value="10B">Class 10B</option>
-              <option value="9A">Class 9A</option>
-              <option value="9B">Class 9B</option>
-              <option value="11A">Class 11A</option>
-              <option value="11B">Class 11B</option>
-              <option value="12A">Class 12A</option>
-            </select>
-          </div>
-
           {(role === "admin" || role === "teacher") && (
-            <button
-              onClick={markAllPresent}
-              className="bg-purple-600 hover:bg-purple-700 text-white text-xs font-semibold px-3 py-1.5 rounded-xl shadow-xs transition flex items-center gap-1"
-            >
-              <Check className="w-3.5 h-3.5" />
-              Mark All Present
-            </button>
+            <>
+              <div className="flex items-center gap-1.5 text-xs bg-gray-50 px-3 py-1.5 rounded-xl border border-gray-200">
+                <Filter className="w-3.5 h-3.5 text-gray-400" />
+                <select
+                  value={selectedClass}
+                  onChange={(e) => setSelectedClass(e.target.value)}
+                  className="bg-transparent outline-none text-xs font-semibold text-gray-700"
+                >
+                  <option value="All">All Classes</option>
+                  <option value="10A">Class 10A</option>
+                  <option value="10B">Class 10B</option>
+                  <option value="9A">Class 9A</option>
+                  <option value="9B">Class 9B</option>
+                  <option value="11A">Class 11A</option>
+                </select>
+              </div>
+
+              <button
+                onClick={markAllPresent}
+                className="bg-purple-600 hover:bg-purple-700 text-white text-xs font-semibold px-3 py-1.5 rounded-xl shadow-xs transition flex items-center gap-1"
+              >
+                <Check className="w-3.5 h-3.5" />
+                Mark All Present
+              </button>
+            </>
           )}
         </div>
       </div>
@@ -100,7 +117,7 @@ export default function AttendancePage() {
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         <div className="bg-lamaSkyLight p-3.5 rounded-xl border border-sky-200 flex items-center justify-between">
           <div>
-            <p className="text-[11px] text-blue-900 font-semibold">Present</p>
+            <p className="text-[11px] text-blue-900 font-semibold">Present Days</p>
             <h3 className="text-xl font-bold text-blue-950">{presentCount}</h3>
           </div>
           <CheckCircle2 className="w-6 h-6 text-blue-600" />
@@ -116,7 +133,7 @@ export default function AttendancePage() {
 
         <div className="bg-red-50 p-3.5 rounded-xl border border-red-200 flex items-center justify-between">
           <div>
-            <p className="text-[11px] text-red-900 font-semibold">Absent</p>
+            <p className="text-[11px] text-red-900 font-semibold">Absent Days</p>
             <h3 className="text-xl font-bold text-red-950">{absentCount}</h3>
           </div>
           <XCircle className="w-6 h-6 text-red-600" />
@@ -131,7 +148,7 @@ export default function AttendancePage() {
         </div>
       </div>
 
-      {/* STUDENT ROSTER ROLL CALL */}
+      {/* ROSTER TABLE */}
       <div className="overflow-x-auto">
         <table className="w-full text-left text-xs border-collapse">
           <thead>
@@ -139,7 +156,7 @@ export default function AttendancePage() {
               <th className="py-3 px-3">Student Name</th>
               <th className="py-3 px-3">Student ID</th>
               <th className="py-3 px-3">Class</th>
-              <th className="py-3 px-3 text-center">Status Action</th>
+              <th className="py-3 px-3 text-center">Status</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
@@ -163,43 +180,62 @@ export default function AttendancePage() {
                   <td className="py-3 px-3 font-mono text-gray-600">{student.studentId}</td>
                   <td className="py-3 px-3 font-semibold text-gray-700">{student.class}</td>
                   <td className="py-3 px-3">
-                    <div className="flex items-center justify-center gap-2">
-                      <button
-                        onClick={() => handleStatusChange(student.id, "PRESENT")}
-                        className={`px-3 py-1 rounded-full font-bold text-[11px] transition flex items-center gap-1 ${
-                          status === "PRESENT"
-                            ? "bg-emerald-600 text-white shadow-xs"
-                            : "bg-gray-100 text-gray-600 hover:bg-emerald-100 hover:text-emerald-800"
-                        }`}
-                      >
-                        <CheckCircle2 className="w-3.5 h-3.5" />
-                        Present
-                      </button>
+                    {role === "admin" || role === "teacher" ? (
+                      <div className="flex items-center justify-center gap-2">
+                        <button
+                          onClick={() => handleStatusChange(student.id, "PRESENT")}
+                          className={`px-3 py-1 rounded-full font-bold text-[11px] transition flex items-center gap-1 ${
+                            status === "PRESENT"
+                              ? "bg-emerald-600 text-white shadow-xs"
+                              : "bg-gray-100 text-gray-600 hover:bg-emerald-100 hover:text-emerald-800"
+                          }`}
+                        >
+                          <CheckCircle2 className="w-3.5 h-3.5" />
+                          Present
+                        </button>
 
-                      <button
-                        onClick={() => handleStatusChange(student.id, "LATE")}
-                        className={`px-3 py-1 rounded-full font-bold text-[11px] transition flex items-center gap-1 ${
-                          status === "LATE"
-                            ? "bg-amber-500 text-white shadow-xs"
-                            : "bg-gray-100 text-gray-600 hover:bg-amber-100 hover:text-amber-800"
-                        }`}
-                      >
-                        <Clock className="w-3.5 h-3.5" />
-                        Late
-                      </button>
+                        <button
+                          onClick={() => handleStatusChange(student.id, "LATE")}
+                          className={`px-3 py-1 rounded-full font-bold text-[11px] transition flex items-center gap-1 ${
+                            status === "LATE"
+                              ? "bg-amber-500 text-white shadow-xs"
+                              : "bg-gray-100 text-gray-600 hover:bg-amber-100 hover:text-amber-800"
+                          }`}
+                        >
+                          <Clock className="w-3.5 h-3.5" />
+                          Late
+                        </button>
 
-                      <button
-                        onClick={() => handleStatusChange(student.id, "ABSENT")}
-                        className={`px-3 py-1 rounded-full font-bold text-[11px] transition flex items-center gap-1 ${
-                          status === "ABSENT"
-                            ? "bg-red-600 text-white shadow-xs"
-                            : "bg-gray-100 text-gray-600 hover:bg-red-100 hover:text-red-800"
-                        }`}
-                      >
-                        <XCircle className="w-3.5 h-3.5" />
-                        Absent
-                      </button>
-                    </div>
+                        <button
+                          onClick={() => handleStatusChange(student.id, "ABSENT")}
+                          className={`px-3 py-1 rounded-full font-bold text-[11px] transition flex items-center gap-1 ${
+                            status === "ABSENT"
+                              ? "bg-red-600 text-white shadow-xs"
+                              : "bg-gray-100 text-gray-600 hover:bg-red-100 hover:text-red-800"
+                          }`}
+                        >
+                          <XCircle className="w-3.5 h-3.5" />
+                          Absent
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="text-center">
+                        <span
+                          className={`font-bold px-3 py-1 rounded-full text-[11px] inline-flex items-center gap-1 ${
+                            status === "PRESENT"
+                              ? "bg-emerald-100 text-emerald-800"
+                              : status === "LATE"
+                              ? "bg-amber-100 text-amber-800"
+                              : "bg-red-100 text-red-800"
+                          }`}
+                        >
+                          {status === "PRESENT" && <CheckCircle2 className="w-3.5 h-3.5" />}
+                          {status === "LATE" && <Clock className="w-3.5 h-3.5" />}
+                          {status === "ABSENT" && <XCircle className="w-3.5 h-3.5" />}
+                          {status}
+                        </span>
+                      </div>
+                    )}
                   </td>
                 </tr>
               );

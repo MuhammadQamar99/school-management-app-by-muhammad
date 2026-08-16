@@ -7,7 +7,7 @@ import Table from "@/components/Table";
 import TableSearch from "@/components/TableSearch";
 import { useApp } from "@/context/AppContext";
 import { Result } from "@/types";
-import { Award, ArrowUpDown, Calendar } from "lucide-react";
+import { Award, ArrowUpDown, Calendar, Lock } from "lucide-react";
 
 const columns = [
   { header: "Subject", accessor: "subject" },
@@ -26,7 +26,18 @@ export default function ResultListPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 8;
 
-  const filteredResults = results.filter((r) => {
+  // 🔒 ROLE FILTER:
+  const roleFilteredResults = results.filter((r) => {
+    if (role === "student" || role === "parent") {
+      return r.student.toLowerCase() === "lucas bennett";
+    }
+    if (role === "teacher") {
+      return r.teacher.toLowerCase().includes("sarah") || r.class === "10A" || r.class === "11A";
+    }
+    return true; // Admin sees everything
+  });
+
+  const searchedResults = roleFilteredResults.filter((r) => {
     const q = search.toLowerCase();
     return (
       r.subject.toLowerCase().includes(q) ||
@@ -36,7 +47,7 @@ export default function ResultListPage() {
     );
   });
 
-  const sortedResults = [...filteredResults].sort((a, b) => {
+  const sortedResults = [...searchedResults].sort((a, b) => {
     return sortOrder === "asc" ? a.score - b.score : b.score - a.score;
   });
 
@@ -84,11 +95,15 @@ export default function ResultListPage() {
       </td>
       <td>
         <div className="flex items-center gap-2">
-          {(role === "admin" || role === "teacher") && (
+          {role === "admin" || role === "teacher" ? (
             <>
               <FormModal table="result" type="update" data={item} id={item.id} />
               {role === "admin" && <FormModal table="result" type="delete" id={item.id} />}
             </>
+          ) : (
+            <span className="text-[10px] text-gray-400 font-medium flex items-center gap-1">
+              <Lock className="w-3 h-3 text-gray-400" /> View only
+            </span>
           )}
         </div>
       </td>
@@ -99,14 +114,26 @@ export default function ResultListPage() {
     <div className="bg-white p-4 md:p-6 rounded-2xl shadow-sm border border-gray-100 flex-1 flex flex-col justify-between">
       <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-base font-bold text-gray-800">All Exam & Assignment Results</h1>
-          <p className="text-xs text-gray-400">Total recorded grade entries: {results.length}</p>
+          <h1 className="text-base font-bold text-gray-800">
+            {role === "student"
+              ? "My Academic Results & Grades"
+              : role === "parent"
+              ? "Child's Academic Report"
+              : "All Student Results"}
+          </h1>
+          <p className="text-xs text-gray-400">
+            {role === "student"
+              ? "Confidential gradebook for Lucas Bennett (10A)"
+              : role === "parent"
+              ? "Academic progress of Lucas Bennett"
+              : `Total recorded grade entries: ${roleFilteredResults.length}`}
+          </p>
         </div>
         <div className="flex flex-col sm:flex-row items-center gap-3 w-full md:w-auto">
           <TableSearch
             value={search}
             onChange={setSearch}
-            placeholder="Search student, subject or class..."
+            placeholder="Search subject or exam..."
           />
           <div className="flex items-center gap-2 self-end">
             <button

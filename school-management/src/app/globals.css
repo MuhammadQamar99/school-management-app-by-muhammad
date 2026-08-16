@@ -1,0 +1,105 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: #F7F8FA;
+  --foreground: #111827;
+}
+
+body {
+  color: var(--foreground);
+  background-color: var(--background);
+  font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+}
+
+/* REACT CALENDAR STYLES */
+.react-calendar {
+  width: 100% !important;
+  border: none !important;
+  font-family: inherit !important;
+  background: transparent !important;
+  font-size: 11px !important;
+}
+
+.react-calendar__navigation {
+  margin-bottom: 0.5rem !important;
+  height: 32px !important;
+}
+
+.react-calendar__navigation button {
+  min-width: 32px !important;
+  background: none !important;
+  font-size: 12px !important;
+  font-weight: 700 !important;
+  color: #1e293b !important;
+  border-radius: 8px !important;
+}
+
+.react-calendar__navigation button:enabled:hover,
+.react-calendar__navigation button:enabled:focus {
+  background-color: #f1f5f9 !important;
+}
+
+.react-calendar__month-view__weekdays {
+  text-align: center !important;
+  text-transform: uppercase !important;
+  font-weight: 700 !important;
+  font-size: 9px !important;
+  color: #94a3b8 !important;
+  text-decoration: none !important;
+}
+
+.react-calendar__month-view__weekdays__weekday abbr {
+  text-decoration: none !important;
+}
+
+.react-calendar__tile {
+  padding: 8px 4px !important;
+  border-radius: 8px !important;
+  font-size: 11px !important;
+  color: #334155 !important;
+  transition: all 0.15s ease !important;
+}
+
+.react-calendar__tile:enabled:hover,
+.react-calendar__tile:enabled:focus {
+  background-color: #f1f0ff !important;
+  color: #4338ca !important;
+}
+
+.react-calendar__tile--now {
+  background: #edf9fd !important;
+  color: #0369a1 !important;
+  font-weight: bold !important;
+}
+
+.react-calendar__tile--active {
+  background: #9333ea !important;
+  color: white !important;
+  font-weight: bold !important;
+}
+
+.react-calendar__tile--active:enabled:hover,
+.react-calendar__tile--active:enabled:focus {
+  background: #7e22ce !important;
+}
+
+/* CUSTOM SCROLLBARS */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f5f9;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}

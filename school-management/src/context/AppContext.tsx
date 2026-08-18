@@ -15,6 +15,7 @@ import {
   EventItem,
   AnnouncementItem,
   AttendanceRecord,
+  RoleRequest,
 } from "@/types";
 import {
   teachersData as initialTeachers,
@@ -39,6 +40,36 @@ interface Notification {
   time: string;
 }
 
+const initialRoleRequests: RoleRequest[] = [
+  {
+    id: "req-1",
+    name: "Muhammad Qamar",
+    email: "qamar.student@example.com",
+    requestedRole: "student",
+    classSection: "10A",
+    status: "PENDING",
+    createdAt: "2026-08-16 09:30",
+  },
+  {
+    id: "req-2",
+    name: "Ayesha Khan",
+    email: "ayesha.khan@example.com",
+    requestedRole: "teacher",
+    subjects: "Chemistry, Biology",
+    status: "PENDING",
+    createdAt: "2026-08-16 08:45",
+  },
+  {
+    id: "req-3",
+    name: "Tariq Mahmood",
+    email: "tariq.m@example.com",
+    requestedRole: "parent",
+    childName: "Lucas Bennett",
+    status: "PENDING",
+    createdAt: "2026-08-15 16:20",
+  },
+];
+
 interface AppContextType {
   role: UserRole;
   setRole: (role: UserRole) => void;
@@ -54,6 +85,7 @@ interface AppContextType {
   events: EventItem[];
   announcements: AnnouncementItem[];
   attendanceRecords: AttendanceRecord[];
+  roleRequests: RoleRequest[];
   notifications: Notification[];
   showRoleBanner: boolean;
   setShowRoleBanner: (show: boolean) => void;
@@ -62,6 +94,9 @@ interface AppContextType {
   updateItem: (table: string, id: number, item: any) => void;
   deleteItem: (table: string, id: number) => void;
   markAttendance: (studentId: number, status: "PRESENT" | "ABSENT" | "LATE", date?: string) => void;
+  submitRoleRequest: (req: Omit<RoleRequest, "id" | "status" | "createdAt">) => void;
+  approveRoleRequest: (id: string) => void;
+  rejectRoleRequest: (id: string) => void;
   addToast: (title: string, message: string, type?: "success" | "info" | "warning" | "error") => void;
   removeToast: (id: string) => void;
   resetAllData: () => void;
@@ -84,6 +119,7 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
   const [events, setEvents] = useState<EventItem[]>(initialEvents);
   const [announcements, setAnnouncements] = useState<AnnouncementItem[]>(initialAnnouncements);
   const [attendanceRecords, setAttendanceRecords] = useState<AttendanceRecord[]>(initialAttendanceRecords);
+  const [roleRequests, setRoleRequests] = useState<RoleRequest[]>(initialRoleRequests);
   const [notifications, setNotifications] = useState<Notification[]>([
     {
       id: "1",
@@ -94,22 +130,15 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
     },
   ]);
 
-  // Load from local storage on mount
   useEffect(() => {
     try {
       const savedRole = localStorage.getItem("schoolama_role");
       if (savedRole && ["admin", "teacher", "student", "parent"].includes(savedRole)) {
         setRoleState(savedRole as UserRole);
       }
-      const savedTeachers = localStorage.getItem("schoolama_teachers");
-      if (savedTeachers) setTeachers(JSON.parse(savedTeachers));
-      const savedStudents = localStorage.getItem("schoolama_students");
-      if (savedStudents) setStudents(JSON.parse(savedStudents));
-      const savedClasses = localStorage.getItem("schoolama_classes");
-      if (savedClasses) setClasses(JSON.parse(savedClasses));
-    } catch {
-      // LocalStorage fallback
-    }
+      const savedRequests = localStorage.getItem("schoolama_requests");
+      if (savedRequests) setRoleRequests(JSON.parse(savedRequests));
+    } catch {}
   }, []);
 
   const setRole = (newRole: UserRole) => {
@@ -142,6 +171,76 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
 
   const removeToast = (id: string) => {
     setNotifications((prev) => prev.filter((n) => n.id !== id));
+  };
+
+  const submitRoleRequest = (req: Omit<RoleRequest, "id" | "status" | "createdAt">) => {
+    const newReq: RoleRequest = {
+      ...req,
+      id: `req-${Date.now()}`,
+      status: "PENDING",
+      createdAt: new Date().toLocaleString([], { dateStyle: "short", timeStyle: "short" }),
+    };
+    const updated = [newReq, ...roleRequests];
+    setRoleRequests(updated);
+    try {
+      localStorage.setItem("schoolama_requests", JSON.stringify(updated));
+    } catch {}
+    addToast("Request Submitted", "Your role assignment request was sent to School Admin.", "info");
+  };
+
+  const approveRoleRequest = (id: string) => {
+    const target = roleRequests.find((r) => r.id === id);
+    if (!target) return;
+
+    const updated = roleRequests.map((r) =>
+      r.id === id ? { ...r, status: "APPROVED" as const } : r
+    );
+    setRoleRequests(updated);
+
+    if (target.requestedRole === "student") {
+      const newStudent: Student = {
+        id: Date.now(),
+        studentId: `STD-${Math.floor(1000 + Math.random() * 9000)}`,
+        name: target.name,
+        email: target.email,
+        phone: "+92 300 1234567",
+        grade: target.classSection?.startsWith("9") ? 9 : 10,
+        class: target.classSection || "10A",
+        address: "Campus Residence, Block A",
+        parent: "Guardian Assigned",
+        photo: "https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=150&auto=format&fit=crop&q=80",
+      };
+      setStudents((prev) => [newStudent, ...prev]);
+    } else if (target.requestedRole === "teacher") {
+      const newTeacher: Teacher = {
+        id: Date.now(),
+        teacherId: `TCH-${Math.floor(1000 + Math.random() * 9000)}`,
+        name: target.name,
+        email: target.email,
+        phone: "+92 300 7654321",
+        subjects: target.subjects?.split(",").map((s) => s.trim()) || ["General Science"],
+        classes: ["10A", "11B"],
+        address: "Faculty Chambers #12",
+        photo: "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=150&auto=format&fit=crop&q=80",
+      };
+      setTeachers((prev) => [newTeacher, ...prev]);
+    }
+
+    try {
+      localStorage.setItem("schoolama_requests", JSON.stringify(updated));
+    } catch {}
+    addToast("Role Approved! ✅", `${target.name} has been approved as ${target.requestedRole.toUpperCase()}.`, "success");
+  };
+
+  const rejectRoleRequest = (id: string) => {
+    const updated = roleRequests.map((r) =>
+      r.id === id ? { ...r, status: "REJECTED" as const } : r
+    );
+    setRoleRequests(updated);
+    try {
+      localStorage.setItem("schoolama_requests", JSON.stringify(updated));
+    } catch {}
+    addToast("Request Rejected ❌", "Role request has been declined.", "warning");
   };
 
   const addItem = (table: string, item: any) => {
@@ -317,6 +416,7 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
     setEvents(initialEvents);
     setAnnouncements(initialAnnouncements);
     setAttendanceRecords(initialAttendanceRecords);
+    setRoleRequests(initialRoleRequests);
     localStorage.clear();
     addToast("Reset Completed", "All data has been reset to default state.", "info");
   };
@@ -338,6 +438,7 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
         events,
         announcements,
         attendanceRecords,
+        roleRequests,
         notifications,
         showRoleBanner,
         setShowRoleBanner,
@@ -345,6 +446,9 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
         updateItem,
         deleteItem,
         markAttendance,
+        submitRoleRequest,
+        approveRoleRequest,
+        rejectRoleRequest,
         addToast,
         removeToast,
         resetAllData,

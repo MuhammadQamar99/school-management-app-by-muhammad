@@ -7,6 +7,7 @@ import AttendanceChart from "@/components/AttendanceChart";
 import FinanceChart from "@/components/FinanceChart";
 import EventCalendar from "@/components/EventCalendar";
 import Announcements from "@/components/Announcements";
+import AccessRequests from "@/components/AccessRequests";
 import { useApp } from "@/context/AppContext";
 
 export default function AdminPage() {
@@ -48,13 +49,14 @@ export default function AdminPage() {
           />
         </div>
 
+        {/* PENDING ROLE REQUESTS & APPROVALS PANEL */}
+        <AccessRequests />
+
         {/* MIDDLE CHARTS */}
         <div className="flex gap-4 flex-col lg:flex-row">
-          {/* COUNT CHART (BOYS VS GIRLS) */}
           <div className="w-full lg:w-1/3 h-[420px]">
             <CountChart />
           </div>
-          {/* ATTENDANCE BAR CHART */}
           <div className="w-full lg:w-2/3 h-[420px]">
             <AttendanceChart />
           </div>

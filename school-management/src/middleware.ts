@@ -1,12 +1,12 @@
 import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
-import { NextResponse } from "next/server";
 
-// In pages par koi restriction nahi hogi
+// Public routes: Root (/), Onboarding, Pending-approval, Sign-in, Sign-up
 const isPublicRoute = createRouteMatcher([
-  "/sign-in(.*)",
-  "/sign-up(.*)",
+  "/",
   "/onboarding(.*)",
   "/pending-approval(.*)",
+  "/sign-in(.*)",
+  "/sign-up(.*)",
 ]);
 
 export default clerkMiddleware((auth, req) => {
@@ -14,11 +14,10 @@ export default clerkMiddleware((auth, req) => {
 
   const { userId } = auth();
 
+  // Agar user dashboards kholne ki koshish kare bina login k, tab sign-in par bheje
   if (!userId) {
     return auth().redirectToSignIn({ returnBackUrl: req.url });
   }
-
-  return NextResponse.next();
 });
 
 export const config = {

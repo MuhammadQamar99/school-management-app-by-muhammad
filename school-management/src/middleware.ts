@@ -1,6 +1,13 @@
 import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
+import { NextResponse } from "next/server";
 
-const isPublicRoute = createRouteMatcher(["/sign-in(.*)", "/sign-up(.*)"]);
+// In pages par koi restriction nahi hogi
+const isPublicRoute = createRouteMatcher([
+  "/sign-in(.*)",
+  "/sign-up(.*)",
+  "/onboarding(.*)",
+  "/pending-approval(.*)",
+]);
 
 export default clerkMiddleware((auth, req) => {
   if (isPublicRoute(req)) return;
@@ -10,6 +17,8 @@ export default clerkMiddleware((auth, req) => {
   if (!userId) {
     return auth().redirectToSignIn({ returnBackUrl: req.url });
   }
+
+  return NextResponse.next();
 });
 
 export const config = {

@@ -4,12 +4,14 @@ import React from "react";
 import { useApp } from "@/context/AppContext";
 import { UserCheck, Check, X, Clock } from "lucide-react";
 
-export const AccessRequests = () => {
-  const { roleRequests, approveRoleRequest, rejectRoleRequest, role } = useApp();
+export function AccessRequests() {
+  const { roleRequests = [], approveRoleRequest, rejectRoleRequest, role } = useApp();
 
   if (role !== "admin") return null;
 
-  const pendingCount = roleRequests.filter((r) => r.status === "PENDING").length;
+  // 🛡️ Safe fallback array taake kabhi undefined na ho
+  const safeRequests = roleRequests || [];
+  const pendingCount = safeRequests.filter((r) => r?.status === "PENDING").length;
 
   return (
     <div className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex flex-col gap-4">
@@ -46,11 +48,11 @@ export const AccessRequests = () => {
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
-            {roleRequests.length > 0 ? (
-              roleRequests.map((req) => {
+            {safeRequests.length > 0 ? (
+              safeRequests.map((req) => {
                 const isPending = req.status === "PENDING";
 
-                const roleBadge = {
+                const roleBadge: Record<string, string> = {
                   student: "bg-lamaYellowLight text-amber-900 border-amber-200",
                   teacher: "bg-lamaSkyLight text-blue-900 border-sky-200",
                   parent: "bg-emerald-50 text-emerald-900 border-emerald-200",
@@ -67,7 +69,7 @@ export const AccessRequests = () => {
                     <td className="py-3 px-3">
                       <span
                         className={`text-[10px] font-bold px-2 py-0.5 rounded border uppercase ${
-                          roleBadge[req.requestedRole]
+                          roleBadge[req.requestedRole] || "bg-gray-100 text-gray-800"
                         }`}
                       >
                         {req.requestedRole}
@@ -83,14 +85,14 @@ export const AccessRequests = () => {
                       {isPending ? (
                         <div className="flex items-center justify-center gap-2">
                           <button
-                            onClick={() => approveRoleRequest(req.id)}
+                            onClick={() => approveRoleRequest && approveRoleRequest(req.id)}
                             className="px-3 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-bold text-[11px] shadow-xs transition flex items-center gap-1"
                           >
                             <Check className="w-3.5 h-3.5" />
                             Approve
                           </button>
                           <button
-                            onClick={() => rejectRoleRequest(req.id)}
+                            onClick={() => rejectRoleRequest && rejectRoleRequest(req.id)}
                             className="px-2.5 py-1 bg-gray-100 hover:bg-red-100 text-gray-600 hover:text-red-700 rounded-lg font-bold text-[11px] transition flex items-center gap-1"
                           >
                             <X className="w-3.5 h-3.5" />
@@ -126,5 +128,6 @@ export const AccessRequests = () => {
       </div>
     </div>
   );
-};
+}
+
 export default AccessRequests;

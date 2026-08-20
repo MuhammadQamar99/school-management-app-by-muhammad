@@ -1,7 +1,7 @@
 import React from "react";
 import Menu from "@/components/Menu";
-import { Navbar } from "@/components/Navbar";
-import { RoleSwitcher } from "@/components/RoleSwitcher";
+import Navbar from "@/components/Navbar";
+import RoleSwitcher from "@/components/RoleSwitcher";
 import Link from "next/link";
 import { GraduationCap } from "lucide-react";
 

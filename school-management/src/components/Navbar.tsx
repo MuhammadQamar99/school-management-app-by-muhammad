@@ -14,7 +14,7 @@ import {
   Settings,
 } from "lucide-react";
 
-export default function Navbar() {
+export function Navbar() {
   const router = useRouter();
   const { role, currentUser, logout, announcements } = useApp();
   const [showNotifs, setShowNotifs] = useState(false);
@@ -220,3 +220,5 @@ export default function Navbar() {
     </div>
   );
 }
+
+export default Navbar;

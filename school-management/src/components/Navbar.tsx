@@ -1,30 +1,36 @@
 "use client";
 
 import React, { useState } from "react";
+import Image from "next/image";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useApp } from "@/context/AppContext";
-import { UserButton, useUser } from "@clerk/nextjs";
 import {
   Search,
   MessageSquare,
   Megaphone,
-  RefreshCw,
+  LogOut,
+  User,
+  Settings,
 } from "lucide-react";
 
-export const Navbar = () => {
-  const { role, announcements, resetAllData } = useApp();
-  const { user } = useUser();
+export default function Navbar() {
+  const router = useRouter();
+  const { role, currentUser, logout, announcements } = useApp();
   const [showNotifs, setShowNotifs] = useState(false);
   const [showMessages, setShowMessages] = useState(false);
+  const [showUserMenu, setShowUserMenu] = useState(false);
 
-  const roleTitle =
-    role === "admin"
-      ? "Super Admin"
-      : role === "teacher"
-      ? "Senior Faculty"
-      : role === "student"
-      ? "Student (10A)"
-      : "Parent Guardian";
+  const handleSignOut = () => {
+    logout();
+    router.push("/sign-in");
+  };
+
+  const displayName = currentUser?.name || (role === "admin" ? "Principal Safak" : "User");
+  const displayRole = currentUser?.role || role;
+  const displayAvatar =
+    currentUser?.avatar ||
+    "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80";
 
   return (
     <div className="flex items-center justify-between p-4 bg-white border-b border-gray-100 sticky top-0 z-20 shadow-sm">
@@ -47,6 +53,7 @@ export const Navbar = () => {
             onClick={() => {
               setShowMessages(!showMessages);
               setShowNotifs(false);
+              setShowUserMenu(false);
             }}
             className="bg-white rounded-full w-8 h-8 flex items-center justify-center cursor-pointer border border-gray-200 hover:bg-lamaSkyLight text-gray-600 hover:text-blue-700 transition-colors relative"
             title="Messages"
@@ -60,7 +67,7 @@ export const Navbar = () => {
           {showMessages && (
             <div className="absolute right-0 mt-2 w-72 bg-white rounded-xl shadow-xl border border-gray-100 p-3 z-50 text-xs animate-in fade-in">
               <div className="flex items-center justify-between pb-2 border-b border-gray-100">
-                <span className="font-bold text-gray-800">Messages & Inquiries</span>
+                <span className="font-bold text-gray-800">Messages &amp; Inquiries</span>
                 <Link
                   href="/list/messages"
                   onClick={() => setShowMessages(false)}
@@ -90,6 +97,7 @@ export const Navbar = () => {
             onClick={() => {
               setShowNotifs(!showNotifs);
               setShowMessages(false);
+              setShowUserMenu(false);
             }}
             className="bg-white rounded-full w-8 h-8 flex items-center justify-center cursor-pointer border border-gray-200 hover:bg-lamaYellowLight text-gray-600 hover:text-amber-700 transition-colors relative"
             title="Announcements"
@@ -103,7 +111,7 @@ export const Navbar = () => {
           {showNotifs && (
             <div className="absolute right-0 mt-2 w-80 bg-white rounded-xl shadow-xl border border-gray-100 p-3 z-50 text-xs animate-in fade-in">
               <div className="flex items-center justify-between pb-2 border-b border-gray-100">
-                <span className="font-bold text-gray-800">School Announcements</span>
+                <span className="font-bold text-gray-800">School Notices</span>
                 <Link
                   href="/list/announcements"
                   onClick={() => setShowNotifs(false)}
@@ -129,36 +137,86 @@ export const Navbar = () => {
           )}
         </div>
 
-        {/* CLERK USER PROFILE & LOGOUT */}
-        <div className="flex items-center gap-3">
-          <div className="flex flex-col text-right">
-            <span className="text-xs leading-4 font-semibold text-gray-800">
-              {user ? user.fullName || user.username || user.primaryEmailAddress?.emailAddress : "User"}
-            </span>
-            <div className="flex items-center justify-end gap-1">
-              <span
-                className={`text-[10px] font-bold px-1.5 py-0.2 rounded uppercase ${
-                  role === "admin"
-                    ? "bg-lamaPurpleLight text-purple-800"
-                    : role === "teacher"
-                    ? "bg-lamaSkyLight text-blue-800"
-                    : role === "student"
-                    ? "bg-lamaYellowLight text-amber-800"
-                    : "bg-emerald-100 text-emerald-800"
-                }`}
-              >
-                {role}
-              </span>
+        {/* USER PROFILE & LOGOUT DROPDOWN */}
+        <div className="relative">
+          <div
+            onClick={() => {
+              setShowUserMenu(!showUserMenu);
+              setShowNotifs(false);
+              setShowMessages(false);
+            }}
+            className="flex items-center gap-3 cursor-pointer p-1 rounded-xl hover:bg-gray-50 transition"
+          >
+            <div className="flex flex-col text-right">
+              <span className="text-xs leading-4 font-semibold text-gray-800">{displayName}</span>
+              <div className="flex items-center justify-end gap-1">
+                <span
+                  className={`text-[10px] font-bold px-1.5 py-0.2 rounded uppercase ${
+                    displayRole === "admin"
+                      ? "bg-lamaPurpleLight text-purple-800"
+                      : displayRole === "teacher"
+                      ? "bg-lamaSkyLight text-blue-800"
+                      : displayRole === "student"
+                      ? "bg-lamaYellowLight text-amber-800"
+                      : "bg-emerald-100 text-emerald-800"
+                  }`}
+                >
+                  {displayRole}
+                </span>
+              </div>
+            </div>
+
+            <div className="relative w-9 h-9 rounded-full overflow-hidden ring-2 ring-lamaPurple">
+              <Image src={displayAvatar} alt={displayName} fill className="object-cover" sizes="36px" />
             </div>
           </div>
 
-          {/* Clerk Official User Button with Profile & Logout Modal */}
-          <div className="ring-2 ring-lamaPurple rounded-full flex items-center justify-center p-0.5">
-            <UserButton afterSignOutUrl="/sign-in" />
-          </div>
+          {showUserMenu && (
+            <div className="absolute right-0 mt-2 w-64 bg-white rounded-2xl shadow-xl border border-gray-100 p-2 z-50 text-xs animate-in fade-in">
+              <div className="p-3 border-b border-gray-100">
+                <p className="font-bold text-gray-900">{displayName}</p>
+                <p className="text-[11px] text-gray-500">
+                  {currentUser?.email || `${currentUser?.username || "user"}@schoolama.com`}
+                </p>
+                <span className="inline-block mt-1.5 text-[10px] bg-purple-100 text-purple-900 px-2 py-0.5 rounded font-bold uppercase">
+                  {displayRole} Portal
+                </span>
+              </div>
+
+              <div className="py-1">
+                <Link
+                  href="/profile"
+                  onClick={() => setShowUserMenu(false)}
+                  className="flex items-center gap-2 px-3 py-2 rounded-xl hover:bg-gray-50 text-gray-700 font-medium"
+                >
+                  <User className="w-4 h-4 text-gray-400" />
+                  My Profile &amp; Bio
+                </Link>
+                {displayRole === "admin" && (
+                  <Link
+                    href="/settings"
+                    onClick={() => setShowUserMenu(false)}
+                    className="flex items-center gap-2 px-3 py-2 rounded-xl hover:bg-gray-50 text-gray-700 font-medium"
+                  >
+                    <Settings className="w-4 h-4 text-gray-400" />
+                    System Settings
+                  </Link>
+                )}
+              </div>
+
+              <div className="pt-2 border-t border-gray-100">
+                <button
+                  onClick={handleSignOut}
+                  className="flex items-center gap-2 w-full text-left px-3 py-2 rounded-xl text-red-600 hover:bg-red-50 font-bold transition"
+                >
+                  <LogOut className="w-4 h-4" />
+                  Sign Out from Portal
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>
   );
-};
-export default Navbar;
+}

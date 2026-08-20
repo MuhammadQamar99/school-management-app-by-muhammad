@@ -8,8 +8,7 @@ const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
   title: "SchooLama - Institutional School Management System",
-  description:
-    "Enterprise-grade School Management System with isolated Role-Based Access Control (Admin, Teacher, Student, Parent).",
+  description: "Modern Multi-Role School Management Dashboard",
 };
 
 export default function RootLayout({

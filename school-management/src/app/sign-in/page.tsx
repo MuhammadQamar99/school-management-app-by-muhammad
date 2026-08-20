@@ -31,14 +31,9 @@ export default function SignInPage() {
     setError("");
 
     setTimeout(() => {
-      const success = login(u, p);
-      if (success) {
-        const uClean = u.trim().toLowerCase();
-        if (uClean === "admin") router.push("/admin");
-        else if (uClean === "sarah.j" || uClean === "teacher") router.push("/teacher");
-        else if (uClean === "lucas.b" || uClean === "student") router.push("/student");
-        else if (uClean === "thomas.b" || uClean === "parent") router.push("/parent");
-        else router.push("/admin");
+      const user = login(u, p);
+      if (user) {
+        router.push(`/${user.role}`);
       } else {
         setError("Invalid username or password. Please check your credentials.");
         setIsLoading(false);

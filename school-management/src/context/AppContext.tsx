@@ -41,6 +41,13 @@ export interface AuthUser {
   classSection?: string;
 }
 
+export interface UserAccount extends AuthUser {
+  password: string;
+  createdAt: string;
+}
+
+type NewUserAccount = Pick<UserAccount, "name" | "email" | "username" | "password" | "role" | "classSection">;
+
 interface Notification {
   id: string;
   title: string;
@@ -54,8 +61,11 @@ interface AppContextType {
   setRole: (role: UserRole) => void;
   currentUser: AuthUser | null;
   isAuthenticated: boolean;
-  login: (username: string, password: string) => boolean;
+  login: (username: string, password: string) => AuthUser | null;
   logout: () => void;
+  accounts: UserAccount[];
+  createAccount: (account: NewUserAccount) => { success: boolean; message?: string };
+  deleteAccount: (id: string | number) => void;
   teachers: Teacher[];
   students: Student[];
   parents: Parent[];
@@ -82,7 +92,7 @@ interface AppContextType {
 }
 
 const defaultAdminUser: AuthUser = {
-  id: 1,
+  id: "admin-1",
   name: "Safak K. (Principal)",
   username: "admin",
   role: "admin",
@@ -90,82 +100,24 @@ const defaultAdminUser: AuthUser = {
   avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80",
 };
 
-const defaultUsers: Record<string, { pass: string; user: AuthUser }> = {
-  admin: {
-    pass: "admin123",
-    user: defaultAdminUser,
+const initialAccounts: UserAccount[] = [
+  { ...defaultAdminUser, password: "admin123", createdAt: "System account" },
+  {
+    id: "teacher-1", name: "Sarah Jenkins", username: "teacher", role: "teacher", email: "sarah.j@lamaedu.com",
+    avatar: "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=150&auto=format&fit=crop&q=80",
+    classSection: "10A, 11A", password: "teacher123", createdAt: "System account",
   },
-  "sarah.j": {
-    pass: "teacher123",
-    user: {
-      id: 2,
-      name: "Sarah Jenkins",
-      username: "sarah.j",
-      role: "teacher",
-      email: "sarah.j@lamaedu.com",
-      avatar: "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=150&auto=format&fit=crop&q=80",
-      classSection: "10A, 11A",
-    },
+  {
+    id: "student-1", name: "Lucas Bennett", username: "student", role: "student", email: "lucas.b@lamaedu.com",
+    avatar: "https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=150&auto=format&fit=crop&q=80",
+    classSection: "10A", password: "student123", createdAt: "System account",
   },
-  teacher: {
-    pass: "teacher123",
-    user: {
-      id: 2,
-      name: "Sarah Jenkins",
-      username: "teacher",
-      role: "teacher",
-      email: "sarah.j@lamaedu.com",
-      avatar: "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=150&auto=format&fit=crop&q=80",
-      classSection: "10A, 11A",
-    },
+  {
+    id: "parent-1", name: "Thomas Bennett", username: "parent", role: "parent", email: "t.bennett@example.com",
+    avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80",
+    password: "parent123", createdAt: "System account",
   },
-  "lucas.b": {
-    pass: "student123",
-    user: {
-      id: 1,
-      name: "Lucas Bennett",
-      username: "lucas.b",
-      role: "student",
-      email: "lucas.b@lamaedu.com",
-      avatar: "https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=150&auto=format&fit=crop&q=80",
-      classSection: "10A",
-    },
-  },
-  student: {
-    pass: "student123",
-    user: {
-      id: 1,
-      name: "Lucas Bennett",
-      username: "student",
-      role: "student",
-      email: "lucas.b@lamaedu.com",
-      avatar: "https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=150&auto=format&fit=crop&q=80",
-      classSection: "10A",
-    },
-  },
-  "thomas.b": {
-    pass: "parent123",
-    user: {
-      id: 1,
-      name: "Thomas Bennett",
-      username: "thomas.b",
-      role: "parent",
-      email: "t.bennett@example.com",
-      avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80",
-    },
-  },
-  parent: {
-    pass: "parent123",
-    user: {
-      id: 1,
-      name: "Thomas Bennett",
-      username: "parent",
-      role: "parent",
-      email: "t.bennett@example.com",
-      avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80",
-    },
-  },
-};
+];
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
@@ -174,6 +126,7 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(true);
   const [role, setRoleState] = useState<UserRole>("admin");
   const [showRoleBanner, setShowRoleBanner] = useState<boolean>(true);
+  const [accounts, setAccounts] = useState<UserAccount[]>(initialAccounts);
 
   const [teachers, setTeachers] = useState<Teacher[]>(initialTeachers);
   const [students, setStudents] = useState<Student[]>(initialStudents);
@@ -206,31 +159,68 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
         setIsAuthenticated(parsed.isAuth);
         setRoleState(parsed.user.role);
       }
+
+      const savedAccounts = localStorage.getItem("schoolama_accounts");
+      if (savedAccounts) {
+        const parsedAccounts: unknown = JSON.parse(savedAccounts);
+        if (Array.isArray(parsedAccounts)) setAccounts(parsedAccounts as UserAccount[]);
+      }
     } catch {}
   }, []);
 
-  const login = (username: string, pass: string): boolean => {
-    const cleanUser = username.trim().toLowerCase();
-    const match = defaultUsers[cleanUser];
+  useEffect(() => {
+    try {
+      localStorage.setItem("schoolama_accounts", JSON.stringify(accounts));
+    } catch {}
+  }, [accounts]);
 
-    if (match && match.pass === pass) {
-      setCurrentUser(match.user);
-      setIsAuthenticated(true);
-      setRoleState(match.user.role);
+  const login = (username: string, pass: string): AuthUser | null => {
+    const cleanUsername = username.trim().toLowerCase();
+    const account = accounts.find(
+      (item) => item.username.toLowerCase() === cleanUsername && item.password === pass
+    );
 
-      try {
-        localStorage.setItem(
-          "schoolama_auth",
-          JSON.stringify({ isAuth: true, user: match.user })
-        );
-        localStorage.setItem("schoolama_role", match.user.role);
-      } catch {}
+    if (!account) return null;
 
-      addToast("Login Successful! 🎉", `Welcome back, ${match.user.name}`, "success");
-      return true;
+    const { password: _password, createdAt: _createdAt, ...user } = account;
+    setCurrentUser(user);
+    setIsAuthenticated(true);
+    setRoleState(user.role);
+
+    try {
+      localStorage.setItem("schoolama_auth", JSON.stringify({ isAuth: true, user }));
+      localStorage.setItem("schoolama_role", user.role);
+    } catch {}
+
+    addToast("Login Successful! 🎉", `Welcome back, ${user.name}`, "success");
+    return user;
+  };
+
+  const createAccount = (account: NewUserAccount) => {
+    const username = account.username.trim().toLowerCase();
+    if (accounts.some((item) => item.username.toLowerCase() === username)) {
+      return { success: false, message: "This username is already in use." };
     }
 
-    return false;
+    const newAccount: UserAccount = {
+      ...account,
+      id: crypto.randomUUID(),
+      username,
+      avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(account.name)}&background=7c3aed&color=fff`,
+      createdAt: new Date().toLocaleString(),
+    };
+    setAccounts((previous) => [newAccount, ...previous]);
+    addToast("Account Created", `${newAccount.name} can now sign in with the assigned credentials.`, "success");
+    return { success: true };
+  };
+
+  const deleteAccount = (id: string | number) => {
+    if (id === defaultAdminUser.id) {
+      addToast("Action blocked", "The primary administrator account cannot be removed.", "warning");
+      return;
+    }
+    setAccounts((previous) => previous.filter((account) => account.id !== id));
+    addToast("Account Removed", "The user can no longer sign in on this browser.", "warning");
   };
 
   const logout = () => {
@@ -446,6 +436,7 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
     setEvents(initialEvents);
     setAnnouncements(initialAnnouncements);
     setAttendanceRecords(initialAttendanceRecords);
+    setAccounts(initialAccounts);
     localStorage.clear();
     addToast("Reset Completed", "All data has been reset to default state.", "info");
   };
@@ -459,6 +450,9 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
         isAuthenticated,
         login,
         logout,
+        accounts,
+        createAccount,
+        deleteAccount,
         teachers,
         students,
         parents,

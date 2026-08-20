@@ -21,6 +21,7 @@ import {
   Megaphone,
   User,
   Settings,
+  KeyRound,
 } from "lucide-react";
 
 interface MenuItem {
@@ -153,6 +154,12 @@ export const Menu = () => {
             label: "My Profile",
             href: "/profile",
             visible: ["admin", "teacher", "student", "parent"],
+          },
+          {
+            icon: <KeyRound className="w-5 h-5" />,
+            label: "Portal Accounts",
+            href: "/list/accounts",
+            visible: ["admin"],
           },
           {
             icon: <Settings className="w-5 h-5" />,

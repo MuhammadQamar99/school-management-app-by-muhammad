@@ -49,6 +49,20 @@ interface Notification {
   time: string;
 }
 
+export interface RoleRequest {
+  id: string;
+  name: string;
+  email: string;
+  requestedRole: Exclude<UserRole, "admin">;
+  classSection?: string;
+  subjects?: string;
+  childName?: string;
+  status: "PENDING" | "APPROVED" | "REJECTED";
+  createdAt: string;
+}
+
+type NewRoleRequest = Omit<RoleRequest, "id" | "status" | "createdAt">;
+
 interface AppContextType {
   role: UserRole;
   setRole: (role: UserRole) => void;
@@ -69,6 +83,10 @@ interface AppContextType {
   announcements: AnnouncementItem[];
   attendanceRecords: AttendanceRecord[];
   notifications: Notification[];
+  roleRequests: RoleRequest[];
+  submitRoleRequest: (request: NewRoleRequest) => void;
+  approveRoleRequest: (id: string) => void;
+  rejectRoleRequest: (id: string) => void;
   showRoleBanner: boolean;
   setShowRoleBanner: (show: boolean) => void;
   // CRUD actions
@@ -174,6 +192,7 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(true);
   const [role, setRoleState] = useState<UserRole>("admin");
   const [showRoleBanner, setShowRoleBanner] = useState<boolean>(true);
+  const [roleRequests, setRoleRequests] = useState<RoleRequest[]>([]);
 
   const [teachers, setTeachers] = useState<Teacher[]>(initialTeachers);
   const [students, setStudents] = useState<Student[]>(initialStudents);
@@ -206,8 +225,22 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
         setIsAuthenticated(parsed.isAuth);
         setRoleState(parsed.user.role);
       }
+
+      const savedRequests = localStorage.getItem("schoolama_role_requests");
+      if (savedRequests) {
+        const parsedRequests: unknown = JSON.parse(savedRequests);
+        if (Array.isArray(parsedRequests)) {
+          setRoleRequests(parsedRequests as RoleRequest[]);
+        }
+      }
     } catch {}
   }, []);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem("schoolama_role_requests", JSON.stringify(roleRequests));
+    } catch {}
+  }, [roleRequests]);
 
   const login = (username: string, pass: string): boolean => {
     const cleanUser = username.trim().toLowerCase();
@@ -247,6 +280,33 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
     try {
       localStorage.setItem("schoolama_role", newRole);
     } catch {}
+  };
+
+  const submitRoleRequest = (request: NewRoleRequest) => {
+    const newRequest: RoleRequest = {
+      ...request,
+      id: crypto.randomUUID(),
+      status: "PENDING",
+      createdAt: new Date().toLocaleString(),
+    };
+    setRoleRequests((previous) => [newRequest, ...previous]);
+    addToast("Request Submitted", "Your registration is awaiting administrator approval.", "success");
+  };
+
+  const updateRoleRequestStatus = (id: string, status: RoleRequest["status"]) => {
+    setRoleRequests((previous) =>
+      previous.map((request) => (request.id === id ? { ...request, status } : request))
+    );
+  };
+
+  const approveRoleRequest = (id: string) => {
+    updateRoleRequestStatus(id, "APPROVED");
+    addToast("Request Approved", "The applicant has been granted portal access.", "success");
+  };
+
+  const rejectRoleRequest = (id: string) => {
+    updateRoleRequestStatus(id, "REJECTED");
+    addToast("Request Declined", "The applicant registration was declined.", "warning");
   };
 
   const addToast = (
@@ -446,6 +506,7 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
     setEvents(initialEvents);
     setAnnouncements(initialAnnouncements);
     setAttendanceRecords(initialAttendanceRecords);
+    setRoleRequests([]);
     localStorage.clear();
     addToast("Reset Completed", "All data has been reset to default state.", "info");
   };
@@ -472,6 +533,10 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
         announcements,
         attendanceRecords,
         notifications,
+        roleRequests,
+        submitRoleRequest,
+        approveRoleRequest,
+        rejectRoleRequest,
         showRoleBanner,
         setShowRoleBanner,
         addItem,
